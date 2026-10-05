@@ -1,0 +1,13 @@
+# Everything the scripts download or build. prep.sh / fetch-extra.sh /
+# build-youtube.sh recreate all of it; none of it belongs in git.
+downloads/
+tools/
+
+# The YouTube signing key is personal to one car. Never commit it.
+downloads/keys/
+
+# Internal review working files (contain local paths, not useful to others).
+docs/review/
+docs/review-prompt.txt
+
+.DS_Store

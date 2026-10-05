@@ -1,0 +1,104 @@
+#!/bin/bash
+# Mock adb for dry-running install.sh without a car (used by tests/dry-run.sh).
+# Knobs (env), all optional except MOCK_STATE:
+#   MOCK_STATE=dir              where the fake car keeps its state (required)
+#   MOCK_REFUSE=1               'adb connect' is refused (car unreachable)
+#   MOCK_AUTH_POLLS=N           'adb devices' says 'unauthorized' N times before 'device'
+#   MOCK_STATE_WORD=connecting  word to show instead of 'unauthorized' (or: authorizing)
+#   MOCK_OFFLINE_FIRST=1        the connection comes up 'offline' and stays so until the
+#                               script disconnects and reconnects (what real adb needs)
+#   MOCK_FAIL_PKG=pkg           make that one install fail...
+#   MOCK_FAIL_MSG=INSTALL_FAILED_...   ...with this message
+#   MOCK_DROP_AFTER_INSTALLS=N  the car vanishes after N successful installs
+#   MOCK_PRESEED=pkg            this package is already on the car before the run
+#   MOCK_APPOPS_FAIL=1          'appops set' answers with an error
+#   MOCK_PUSH_FAIL=1            'adb push' fails
+#   MOCK_CRLF=1                 every 'adb shell' output line ends in \r, like a real device
+# Behaviour copied from real adb: a second 'connect' to an existing connection answers
+# "already connected" and changes nothing (even when that connection is offline); the
+# first 'connect' to a car that still has to authorise prints "failed to authenticate";
+# 'push DIR DEST/' puts DIR inside DEST only if DEST already exists, otherwise DIR's
+# contents land loose in a new DEST.
+set -u
+STATE="${MOCK_STATE:?set MOCK_STATE}"
+mkdir -p "$STATE"
+printf 'adb %s\n' "$*" >> "$STATE/calls.log"
+serial=""
+if [[ "${1:-}" == "-s" ]]; then serial="$2"; shift 2; fi
+cmd="${1:-}"; [[ $# -gt 0 ]] && shift
+connected() { [[ -s "$STATE/connected" ]]; }
+if [[ -n "${MOCK_PRESEED:-}" && ! -e "$STATE/preseeded" ]]; then
+  echo "$MOCK_PRESEED" >> "$STATE/installed"; touch "$STATE/preseeded"
+fi
+
+case "$cmd" in
+  start-server|kill-server) exit 0 ;;
+  connect)
+    if [[ "${MOCK_REFUSE:-0}" == 1 ]]; then echo "cannot connect to $1: Connection refused"; exit 1; fi
+    if connected; then echo "already connected to $1"; exit 0; fi
+    echo "$1" > "$STATE/connected"
+    if [[ ${MOCK_AUTH_POLLS:-0} -gt 0 && ! -s "$STATE/polls" ]]; then echo "failed to authenticate to $1"; exit 1; fi
+    echo "connected to $1"; exit 0 ;;
+  disconnect) rm -f "$STATE/connected"; touch "$STATE/reconnected"; echo "disconnected $1"; exit 0 ;;
+  devices)
+    echo "List of devices attached"
+    if connected; then
+      n=0; [[ -s "$STATE/polls" ]] && n=$(cat "$STATE/polls"); n=$((n+1)); echo "$n" > "$STATE/polls"
+      if [[ "${MOCK_OFFLINE_FIRST:-0}" == 1 && ! -e "$STATE/reconnected" ]]; then printf '%s\toffline\n' "$(cat "$STATE/connected")"
+      elif [[ $n -le ${MOCK_AUTH_POLLS:-0} ]]; then printf '%s\t%s\n' "$(cat "$STATE/connected")" "${MOCK_STATE_WORD:-unauthorized}"
+      else printf '%s\tdevice\n' "$(cat "$STATE/connected")"; fi
+    fi
+    exit 0 ;;
+  shell)
+    connected || { echo "adb: device '$serial' not found" >&2; exit 1; }
+    shell_cmd() {
+      case "$*" in
+        "getprop ro.build.version.release") echo "11" ;;
+        "getprop ro.build.display.id") echo "DX_BYD_AUTO-user 11 RQ3A.211001.001 mock" ;;
+        "pm list packages "*) all="$*"; pkg="${all##* }"   # ${*##..} would strip each arg separately
+          [[ -s "$STATE/installed" ]] && grep -F -- "$pkg" "$STATE/installed" | sed 's/^/package:/'; return 0 ;;
+        "appops set "*)
+          if [[ "${MOCK_APPOPS_FAIL:-0}" == 1 ]]; then echo "Error: Unknown package: $3"; return 255; fi
+          echo "$*" >> "$STATE/appops" ;;
+        "mkdir -p "*) all="$*"; mkdir -p "$STATE/fs${all#mkdir -p }" ;;
+        "ls "*) all="$*"; p="${all#ls }"; ls "$STATE/fs$p" 2>/dev/null || { echo "ls: $p: No such file or directory" >&2; return 1; } ;;
+        *) echo "mock: unhandled shell command: $*" >&2; return 1 ;;
+      esac
+    }
+    if [[ "${MOCK_CRLF:-0}" == 1 ]]; then shell_cmd "$@" | sed $'s/$/\r/'; exit "${PIPESTATUS[0]}"; fi
+    shell_cmd "$@"; exit $? ;;
+  install)
+    connected || { echo "adb: device '$serial' not found" >&2; exit 1; }
+    file="${!#}"
+    case "$(basename "$file" .apk)" in
+      manager) pkg=io.github.muntashirakon.AppManager ;; store) pkg=com.aurora.store ;;
+      tube) pkg=org.smarttube.stable ;; retroarch) pkg=com.retroarch.aarch64 ;;
+      overdrive) pkg=com.overdrive.app ;; jellyfin) pkg=org.jellyfin.mobile ;;
+      gmscore) pkg=app.revanced.android.gms ;; youtube) pkg=app.rvx.android.youtube ;;
+      *) pkg="unknown.$(basename "$file")" ;;
+    esac
+    [[ -s "$file" ]] || { echo "adb: failed to stat $file: No such file or directory"; exit 1; }
+    echo "Performing Streamed Install"
+    if [[ "$pkg" == "${MOCK_FAIL_PKG:-}" ]]; then
+      echo "adb: failed to install $file: Failure [${MOCK_FAIL_MSG:-INSTALL_FAILED_OLDER_SDK}]"; exit 1
+    fi
+    echo "$pkg" >> "$STATE/installed"; echo "Success"
+    k=0; [[ -s "$STATE/installs_ok" ]] && k=$(cat "$STATE/installs_ok"); k=$((k+1)); echo "$k" > "$STATE/installs_ok"
+    if [[ -n "${MOCK_DROP_AFTER_INSTALLS:-}" && $k -ge ${MOCK_DROP_AFTER_INSTALLS} ]]; then rm -f "$STATE/connected"; fi
+    exit 0 ;;
+  push)
+    connected || { echo "adb: device '$serial' not found" >&2; exit 1; }
+    src="$1"; dst="${2%/}"
+    if [[ "${MOCK_PUSH_FAIL:-0}" == 1 ]]; then
+      echo "adb: error: failed to copy '$src' to '$dst': remote couldn't create file: Permission denied" >&2; exit 1
+    fi
+    if [[ -d "$STATE/fs$dst" ]]; then
+      cp -R "$src" "$STATE/fs$dst/" || { echo "adb: error: failed to copy" >&2; exit 1; }      # DEST exists: DEST/ROMs
+    else
+      # no DEST: DEST is created and the files land loose inside it
+      if ! mkdir -p "$STATE/fs$dst" || ! cp -R "$src/." "$STATE/fs$dst/"; then echo "adb: error: failed to copy" >&2; exit 1; fi
+    fi
+    n=$(find "$src" -type f | wc -l | tr -d ' ')
+    echo "$src/: $n files pushed, 0 skipped. 4.2 MB/s (188416 bytes in 0.043s)"; exit 0 ;;
+  *) echo "mock: unhandled: $cmd $*" >&2; exit 1 ;;
+esac
