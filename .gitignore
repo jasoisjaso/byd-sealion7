@@ -11,3 +11,4 @@ docs/review/
 docs/review-prompt.txt
 
 .DS_Store
+.worktrees/

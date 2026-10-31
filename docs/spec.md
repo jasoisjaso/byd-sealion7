@@ -4,6 +4,10 @@ This is the originating spec for the project. Section A is the owner's original 
 Section B lists the decisions agreed with the owner during a design interview afterwards; where B
 contradicts A, B wins (it is an agreed change, not scope creep). Section C lists the deliverables.
 
+> SUPERSEDED 2026-10-17: after real-car testing the kit was cut down to SmartTube + Overdrive with a
+> single `kit.sh` (install and update). See docs/adr/0004 and CONTEXT.md. The rest of this file is history.
+> SUPERSEDED 2026-10-31: Overdrive dropped too; the kit is SmartTube only (docs/adr/0005).
+
 ## A. Original brief (verbatim)
 
 Act as an expert Android systems engineer and Apple scripting specialist. Create a completely automated
@@ -96,6 +100,9 @@ Decisions:
 - D9 Car stats: Sealion 7 Pilot first, OBD dongle later. Information only.
 - D10 Overdrive (dashcam/sentry, alpha) is downloaded by prep.sh and offered as an optional step in
   install.sh, off by default (y/N prompt; --with-overdrive flag).
+  2026-10-05: switched to the braveheart release channel (v52.3). Alpha v49.7 showed an empty app on
+  the owner's Sealion 7; the DiLink 5 fixes are braveheart-only. The app also needs Ingestion Mode =
+  DiLink 5 (Diagnostics > Camera probe), per the maintainer on Overdrive issue #304.
 - D11 SmartTube for the owner (installed by the script). YouTube Kids was dropped on 2026-10-05
   (owner: "unnecessary"). Added the same day: Jellyfin (script), microG + ReVanced-patched YouTube
   (optional build stage, docs/adr/0003).

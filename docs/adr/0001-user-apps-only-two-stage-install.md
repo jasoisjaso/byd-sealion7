@@ -1,7 +1,7 @@
 # 0001 — User apps only, two-stage install, on-car installers first
 
 Date: 2026-10-04
-Status: Accepted
+Status: Accepted (the on-car installers part is superseded by 0004)
 
 ## Context
 The Sealion 7 head unit runs Android 11 with no Google Play Services. Wireless ADB is reachable through a hidden menu, but BYD has removed easy ADB access on other models (Seal, Atto 3) in OTA updates. Installed apps usually survive OTAs. The owner wants a Tesla-like mix of apps without risking the warranty.

@@ -1,9 +1,9 @@
 BEYOND THE SCRIPT: driver monitoring, car stats, the rest of the wish list
 ==========================================================================
 
-The scripts install apps and games. Three things from the original brief
-can't be done by a script, so here is what is actually known, as of
-4 October 2026.
+kit.sh installs SmartTube. Three things from the original brief can't be
+done by it, so here is what is actually known. Written 4 October 2026,
+updated 31 October 2026.
 
   "Confirmed"  = an owner, a reviewer or BYD said it; the source is listed
                  at the bottom.
@@ -13,11 +13,16 @@ can't be done by a script, so here is what is actually known, as of
 1. DRIVER MONITORING ("keep eyes on road")
 ------------------------------------------
 
-Straight answer: it cannot be made to stay off. No owner has reported any
-setting, app or update (up to 3.3.0) that makes it remember "off". BYD told carsales
-that the driver-assist items can be switched off but come back on with
-every start. Australian owners confirm they switch it off every drive.
-This kit does not touch it (why: docs/adr/0002). What you can do:
+Update, October 2026: Nag Killer (github.com/jasoisjaso/byd-nag-killer)
+keeps it off. It's a separate app that switches driver monitoring off at
+every start, within a few seconds, and can do the same for lane assist,
+the speed limit chime, child detection, AEB, cross traffic brake and
+emergency lane keeping. Tested on an Australian Sealion 7. This kit itself
+still doesn't touch any of it (docs/adr/0002).
+
+The car's own behaviour: BYD told carsales that the driver-assist items can
+be switched off but come back on with every start, and no update up to 3.3.0
+changes that. Without Nag Killer, what you can do:
 
   a. The full menu path (confirmed, generic BYD):
      Settings > Vehicle > Cabin Perception > Driver Attention Warning >
@@ -43,9 +48,6 @@ What this kit will not do, and why:
     system: owners report the child-presence alerts still fire, and
     nobody knows how an insurer treats a covered safety camera after a
     crash.
-  - Tasker or ADB automations that re-toggle it at every start. They are
-    traded on r/BYD. They poke a safety system from a sideloaded app and
-    break on every update. Decided against (docs/adr/0002).
 
 One good sign: update 3.0.0 made Child Presence Detection remember "off"
 after a restart, so BYD does change these defaults sometimes. Read the
@@ -76,8 +78,8 @@ history.
   to hear when it opens. Unverified on Australian cars (their examples
   are Morocco and Turkey).
 
-Backup: an OBD dongle plus the Car Scanner ELM OBD2 app (Aurora Store on
-the car, or your phone). Car Scanner has a vehicle profile for "Sealion 7
+Backup: an OBD dongle plus the Car Scanner ELM OBD2 app (on your
+phone). Car Scanner has a vehicle profile for "Sealion 7
 EV (EU version)" and videos show battery health and cell voltages on a
 Sealion 7 AWD. Needs a Bluetooth OBD2 dongle from Car Scanner's
 compatibility list, plugged into the port under the dash. Unverified on
@@ -90,36 +92,33 @@ Also seen on BYD head units, unverified on DiLink 5: Electro
 3. THE REST OF THE TESLA-LIKE LIST
 ----------------------------------
 
-Navigation        Waze via install-extra.sh (installs on the AU car; map
-                  didn't load on the first try, see checklist Part C;
-                  sometimes rotates the screen; sign in with email, not
-                  Google). Google
-                  Maps leans on Google services the car doesn't have:
-                  unverified, expect problems. Sealion 7 Pilot later.
-Video             SmartTube (script; WORKS on the AU Sealion 7, 2026-10-04).
-                  YouTube ad-free via ReVanced (build-youtube.sh, not yet
-                  tried on the car). Jellyfin (script) for your own media
-                  server. Plex (Aurora): confirmed on 3.3.0. Netflix says
-                  "device not supported". Disney+ gives audio only. Prime Video won't
-                  install. Parked or charging only.
-Games             RetroArch (script; unverified on the Sealion 7) plus three
-                  homebrew games. More free games: hh.gbdev.io (Game Boy
-                  homebrew), itch.io. A
-                  Bluetooth controller is easier for small hands if the
-                  car pairs one (unverified).
-Dashcam / sentry  Overdrive (script, optional, alpha). It streams the
-                  car's cameras on 3.3.0 but has open bugs on DiLink 5.
-                  BladeWatch is an alternative (unverified).
-Cluster mirroring DashCast (github.com/Kiroha/byd-dashcast) mirrors an
-                  app onto the cluster behind the wheel, e.g. Waze.
-                  Unverified on the Sealion 7; try it last.
+What happened on the AU Sealion 7 (October 2026). The car refuses every
+install started from its own screen, so on-car app stores can't install
+anything, and every app has to come from a Mac with adb.
+
+Video             SmartTube (kit.sh): WORKS. A patched YouTube (ReVanced
+                  Extended) installed but its feed errors out; RVX was
+                  abandoned in Dec 2025 (MorpheApp is the live successor,
+                  untested here). Plex: confirmed on 3.3.0 elsewhere.
+                  Netflix says "device not supported", Disney+ gives audio
+                  only, Prime Video won't install. Parked or charging only.
+Dashcam           Overdrive (github.com/yash-srivastava/Overdrive-release,
+                  braveheart build; no longer installed by kit.sh). Needs
+                  Ingestion Mode set to DiLink 5. Continuous recording works;
+                  parked sentry keeps the car awake. Slowed CarPlay on the
+                  owner's car, which is why it was taken off.
+Proximity lock    Overdrive has one, but it missed the walk-away on the
+                  owner's car: the phone's Bluetooth drops at power-off and
+                  reconnects too late.
+Navigation        Waze installed but showed a blank map: it needs real Google
+                  Play Services. Use CarPlay / Android Auto from the phone.
+Browser           Brave: works. Not part of kit.sh; kit.sh leaves it alone.
+Games             RetroArch: removed because it went unused.
+Cluster mirroring DashCast (github.com/Kiroha/byd-dashcast). Unverified on
+                  the Sealion 7.
 Remote control    The official BYD app (pre-conditioning, lock, charge
-                  status). Nothing third-party does this yet.
-Browser           Brave (install-extra.sh; Aurora can't install on this car).
-Claude            No APK outside Google Play, and Aurora can't install on
-                  this car: use claude.ai in Brave.
-Music             Spotify from Aurora (unverified here). Bluetooth from
-                  the phone always works.
+                  status).
+Music             Bluetooth or CarPlay from the phone.
 
 Stay away from:
   - The DeBondor "BYD unlocking guide" and its firmware files. They are
@@ -131,16 +130,15 @@ Stay away from:
   - Anything that needs root. Nothing above does.
 
 
-4. UPDATES, AND A PLAN B FOR INSTALLING
----------------------------------------
+4. UPDATES
+----------
 
 BYD has removed ADB access on other models in updates. Apps already
-installed have survived so far. That is why App Manager and Aurora Store
-go on first: they install and update apps from the car screen without
-the Mac. Before accepting an update, skim the Whirlpool Sealion 7 thread
-or r/BYD for what it changed.
+installed have survived so far, but without Wireless ADB they can't be
+updated: there is no on-car route on this car. Before accepting a BYD
+update, skim the Whirlpool Sealion 7 thread or r/BYD for what it changed.
 
-If install.sh can't connect but Wireless ADB is on, Buddy-Load
+If kit.sh can't connect but Wireless ADB is on, Buddy-Load
 (github.com/charleschowsg/buddy-load, signed Apple Silicon DMG) is a
 point-and-click Mac app that does the same adb install. A German
 reviewer used it on 3.3.0.

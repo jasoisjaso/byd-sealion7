@@ -1,7 +1,7 @@
 # 0002 — Driver monitoring stays out of scope
 
 Date: 2026-10-04
-Status: Accepted
+Status: Accepted for this kit. Update 2026-10-31: the owner later built the switch-off as a separate app, Nag Killer (github.com/jasoisjaso/byd-nag-killer). It needs no root and talks to the car's own settings service, so the "same ADB access BYD keeps removing" point below turned out weaker than expected. The kit itself still doesn't touch driver monitoring.
 
 ## Context
 The owner finds the "keep eyes on road" Driver Attention Warning intrusive and asked for a way to keep it off. Research found: on Australian Sealion 7s it switches back on every drive by design (BYD confirmed this to carsales), no report was found that any update up to 3.3.0 changes that, and owners on r/BYD trade Tasker/ADB automations and sell camera covers to get around it.

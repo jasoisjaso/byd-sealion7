@@ -1,7 +1,7 @@
 # 0003 — YouTube is patched on the Mac, not with ReVanced Manager on the car
 
 Date: 2026-10-05
-Status: Accepted
+Status: Superseded by 0004
 
 ## Context
 The owner wants real YouTube (not the TV-style SmartTube) without ads, running on a head unit that has no Google Play Services. The usual way is ReVanced Manager: an app that downloads patches and rebuilds YouTube on the device itself.
