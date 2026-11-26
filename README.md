@@ -10,7 +10,9 @@ from the Mac over Wi-Fi. That includes updates: SmartTube can't update itself
 on this car. Re-run the same command whenever you want the newest version.
 
 Want driver monitoring, lane assist, the speed limit chime and the other
-nags to stay off? That's a separate app, Nag Killer:
+nags to stay off? That's a separate app, Nag Killer. It also puts your seat
+fans or seat heat on at every start, moves the driver's seat to a saved
+position, and keeps a trip and charging log:
 https://github.com/jasoisjaso/byd-nag-killer
 
 Status (Australian Sealion 7, October 2026): Wireless ADB and SmartTube work.
